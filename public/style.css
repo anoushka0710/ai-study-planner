@@ -1,0 +1,92 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Open+Sans&display=swap');
+
+body {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+    position: relative;
+    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.8)), 
+                url('bg2.webp') no-repeat center center/cover;
+    font-family: 'Open Sans', sans-serif;
+    color: #FFFFFF;
+}
+
+.container {
+    position: absolute;
+    bottom: 50px;
+    left: 50px;
+    max-width: 500px;
+    width: 90%;
+    text-align: left;
+    background-color: transparent;
+    padding: 0;
+    box-shadow: none;
+    opacity: 1; 
+}
+
+@keyframes slideInFromLeft {
+    0% {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+    100% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeIn {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+h1 {
+    font-family: 'Playfair Display', serif; 
+    font-size: 3.8em;
+    font-weight: 700;
+    line-height: 1.0;
+    margin-bottom: 5px;
+    color: #FFFFFF;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    animation: slideInFromLeft 1.2s ease-out forwards;
+}
+
+p {
+    font-size: 1.0em;
+    color: #D3D3D3;
+    margin-top: 5px;
+    margin-bottom: 25px;
+    font-style: italic;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    animation: fadeIn 1s ease-out forwards;
+    animation-delay: 1.0s;
+}
+
+.button {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: transparent;
+    color: #FFFFFF;
+    border: 1px solid #FFFFFF;
+    border-radius: 5px;
+    text-decoration: none;
+    font-size: 0.9em;
+    font-weight: normal;
+    letter-spacing: 1px;
+    transition: background-color 0.3s;
+    opacity: 0;
+    animation: fadeIn 0.8s ease-out forwards;
+    animation-delay: 1.5s;
+}
+
+.button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
