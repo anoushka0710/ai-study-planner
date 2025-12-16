@@ -1,0 +1,80 @@
+body {
+  margin: 0;
+}
+
+.page {
+  min-height: 100vh;
+  background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.8)),
+    url("/bg2.webp")
+    center / cover no-repeat;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 60px 40px;
+  background-attachment: fixed;
+}
+
+.form-box {
+  background: rgba(0, 0, 0, 0.6);
+  padding: 40px;
+  border-radius: 10px;
+  width: 100%;
+  max-width: none;
+  color: white;
+}
+
+.form-box h1,
+.form-box p {
+  text-align: center;
+}
+
+
+.form-box h1 {
+  font-size: 32px;
+  margin-bottom: 10px;
+}
+
+.form-box p {
+  color: #ccc;
+  margin-bottom: 30px;
+}
+
+.group {
+  margin-bottom: 20px;
+}
+
+.group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.group input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #555;
+  background: rgba(255,255,255,0.1);
+  color: white;
+}
+
+.group input:focus {
+  outline: none;
+  border-color: #a3cc39;
+}
+
+.submit {
+  width: 100%;
+  padding: 12px;
+  background: #7957d5;
+  border: none;
+  border-radius: 8px;   
+  font-size: 16px;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.submit:hover {
+  background: #6c4ec7;
+}
