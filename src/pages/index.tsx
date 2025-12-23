@@ -18,8 +18,8 @@ export default function Home() {
         transition={{ duration: 1.2, ease: "easeOut" }}
       />
 
-      {/* Dark Overlay */}
-      <div className="absolute inset-0 bg-black/60" />
+<div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/20 to-black/40" />
+
 
       {/* Content */}
       <div className="relative z-10 flex h-full items-center px-12">
