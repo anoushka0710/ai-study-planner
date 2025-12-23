@@ -1,15 +1,21 @@
 import Link from "next/link";
-// this is the home page
+import { motion } from "framer-motion";
+
 export default function Home() {
-  
   return (
-    <div className="relative h-screen w-full">
+    <motion.div
+      className="relative h-screen w-full overflow-hidden"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 1 }}
+    >
       {/* Background Image */}
-      <div
+      <motion.div
         className="absolute inset-0 bg-cover bg-center"
-        style={{
-          backgroundImage: "url('/bg2.webp')",
-        }}
+        style={{ backgroundImage: "url('/b1.jpg')" }}
+        initial={{ scale: 1.1 }}
+        animate={{ scale: 1 }}
+        transition={{ duration: 1.2, ease: "easeOut" }}
       />
 
       {/* Dark Overlay */}
@@ -17,22 +23,46 @@ export default function Home() {
 
       {/* Content */}
       <div className="relative z-10 flex h-full items-center px-12">
-        <div className="max-w-xl text-white">
-          <h1 className="text-5xl font-serif font-bold leading-tight">
+        <motion.div
+          className="max-w-xl text-white"
+          initial={{ opacity: 0, x: -40 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8, delay: 0.3 }}
+        >
+          <motion.h1
+            className="text-5xl font-serif font-bold leading-tight"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
             Welcome to Study <br /> Planner
-          </h1>
+          </motion.h1>
 
-          <p className="mt-4 text-lg text-gray-200">
+          <motion.p
+            className="mt-4 text-lg text-gray-200"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
             Plan your studies smartly and stay consistent.
-          </p>
+          </motion.p>
 
           <Link href="/planner">
-            <button className="mt-8 rounded-md border border-white px-6 py-3 text-white transition hover:bg-white hover:text-black">
+            <motion.button
+              className="mt-8 rounded-md border border-white px-6 py-3 text-white"
+              whileHover={{
+                scale: 1.05,
+                backgroundColor: "#ffffff",
+                color: "#000000",
+              }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
               Start Planning
-            </button>
+            </motion.button>
           </Link>
-        </div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 }

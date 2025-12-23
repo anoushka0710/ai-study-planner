@@ -1,10 +1,10 @@
 import { useState } from "react";
-import {useRouter} from "next/router";
-
+import { useRouter } from "next/router";
+import { motion } from "framer-motion";
 
 export default function Planner() {
-  const router=useRouter();
-  // 🔹 State for form inputs
+  const router = useRouter();
+
   const [subjectsCount, setSubjectsCount] = useState<number>(1);
   const [subjects, setSubjects] = useState("");
   const [examDate, setExamDate] = useState("");
@@ -14,20 +14,16 @@ export default function Planner() {
   const [pomodoro, setPomodoro] = useState<number>(25);
   const [restDays, setRestDays] = useState<number>(0);
 
-  // 🔹 State for result
   const [plan, setPlan] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // 🔹 THIS is where fetch() belongs
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); // prevent page reload
+    e.preventDefault();
     setLoading(true);
 
     const res = await fetch("/api/generate_plan", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         subjectsCount,
         subjects,
@@ -41,21 +37,32 @@ export default function Planner() {
     });
 
     const data = await res.json();
-    // setPlan(data.plan);
-    // setLoading(false);
     router.push(`/planner/${data.id}`);
-
   };
 
   return (
-    <div className="page">
-      <div className="form-box">
+    <motion.div
+      className="page"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.8 }}
+    >
+      <motion.div
+        className="form-box"
+        initial={{ y: 40, opacity: 0, scale: 0.95 }}
+        animate={{ y: 0, opacity: 1, scale: 1 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+      >
         <h1>Plan Your Session</h1>
         <p>Enter details to create your study plan</p>
 
-        {/* 🔹 attach onSubmit here */}
         <form onSubmit={handleSubmit}>
-          <div className="group">
+          <motion.div
+            className="group"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
             <label>No. of Subjects</label>
             <input
               type="number"
@@ -64,9 +71,9 @@ export default function Planner() {
               onChange={(e) => setSubjectsCount(Number(e.target.value))}
               required
             />
-          </div>
+          </motion.div>
 
-          <div className="group">
+          <motion.div className="group" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <label>Subjects (comma separated)</label>
             <input
               type="text"
@@ -75,9 +82,9 @@ export default function Planner() {
               onChange={(e) => setSubjects(e.target.value)}
               required
             />
-          </div>
+          </motion.div>
 
-          <div className="group">
+          <motion.div className="group" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <label>Exam Date</label>
             <input
               type="date"
@@ -85,9 +92,9 @@ export default function Planner() {
               onChange={(e) => setExamDate(e.target.value)}
               required
             />
-          </div>
+          </motion.div>
 
-          <div className="group">
+          <motion.div className="group" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <label>Hours per Day</label>
             <input
               type="number"
@@ -97,9 +104,9 @@ export default function Planner() {
               onChange={(e) => setHoursPerDay(Number(e.target.value))}
               required
             />
-          </div>
+          </motion.div>
 
-          <div className="group">
+          <motion.div className="group" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <label>Difficulty Level</label>
             <input
               type="range"
@@ -108,9 +115,9 @@ export default function Planner() {
               value={difficulty}
               onChange={(e) => setDifficulty(Number(e.target.value))}
             />
-          </div>
+          </motion.div>
 
-          <div className="group">
+          <motion.div className="group" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <label>Revision Days Before Exam</label>
             <input
               type="number"
@@ -118,9 +125,9 @@ export default function Planner() {
               value={revisionDays}
               onChange={(e) => setRevisionDays(Number(e.target.value))}
             />
-          </div>
+          </motion.div>
 
-          <div className="group">
+          <motion.div className="group" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <label>Pomodoro Slot (minutes)</label>
             <input
               type="number"
@@ -128,9 +135,9 @@ export default function Planner() {
               value={pomodoro}
               onChange={(e) => setPomodoro(Number(e.target.value))}
             />
-          </div>
+          </motion.div>
 
-          <div className="group">
+          <motion.div className="group" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <label>Rest Days per Week</label>
             <input
               type="number"
@@ -139,21 +146,31 @@ export default function Planner() {
               value={restDays}
               onChange={(e) => setRestDays(Number(e.target.value))}
             />
-          </div>
+          </motion.div>
 
-          <button className="submit" type="submit">
-            {loading ? "Generating...": "Generate Schedule"}
-          </button>
+          <motion.button
+            className="submit"
+            type="submit"
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
+            animate={loading ? { opacity: [1, 0.6, 1] } : {}}
+            transition={{ repeat: loading ? Infinity : 0, duration: 1 }}
+          >
+            {loading ? "Generating your plan..." : "Generate Schedule"}
+          </motion.button>
         </form>
 
-        {/* 🔹 Display generated plan */}
         {plan && (
-          <div className="result">
+          <motion.div
+            className="result"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
             <h2>Your Study Plan</h2>
             <pre>{plan}</pre>
-          </div>
+          </motion.div>
         )}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
