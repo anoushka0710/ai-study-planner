@@ -85,7 +85,7 @@ export default function Planner() {
           </motion.div>
 
           <motion.div className="group" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <label>Exam Date</label>
+            <label>Target Date</label>
             <input
               type="date"
               value={examDate}
