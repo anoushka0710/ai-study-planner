@@ -1,6 +1,7 @@
 import Link from "next/link";
 // this is the home page
 export default function Home() {
+  
   return (
     <div className="relative h-screen w-full">
       {/* Background Image */}
