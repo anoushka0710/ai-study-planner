@@ -1,6 +1,49 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useAuth } from "../context/AuthContext";
 
+/* ---------- Auth Status Component ---------- */
+function AuthStatus() {
+  const { user, login, logout, authloading } = useAuth();
+
+  if (authloading) {
+    return <p className="text-white mt-6">Checking authentication...</p>;
+  }
+
+  if (user) {
+    return (
+      <div className="mt-6 text-white">
+        <p className="mb-3">Signed in as {user.displayName}</p>
+
+        <div className="flex gap-4">
+          <button
+            onClick={logout}
+            className="bg-red-600 px-4 py-2 rounded"
+          >
+            Logout
+          </button>
+
+          <Link href="/planner">
+            <button className="border border-white px-6 py-2 rounded">
+              Start Planning
+            </button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={login}
+      className="mt-6 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold"
+    >
+      Sign in with Google
+    </button>
+  );
+}
+
+/* ---------- Home Page ---------- */
 export default function Home() {
   return (
     <motion.div
@@ -9,7 +52,7 @@ export default function Home() {
       animate={{ opacity: 1 }}
       transition={{ duration: 1 }}
     >
-      {/* Background Image */}
+      {/* Background */}
       <motion.div
         className="absolute inset-0 bg-cover bg-center"
         style={{ backgroundImage: "url('/b1.jpg')" }}
@@ -17,9 +60,7 @@ export default function Home() {
         animate={{ scale: 1 }}
         transition={{ duration: 1.2, ease: "easeOut" }}
       />
-
-<div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/20 to-black/40" />
-
+      <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/20 to-black/40" />
 
       {/* Content */}
       <div className="relative z-10 flex h-full items-center px-12">
@@ -33,7 +74,6 @@ export default function Home() {
             className="text-5xl font-serif font-bold leading-tight"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
           >
             Welcome to Study <br /> Planner
           </motion.h1>
@@ -42,25 +82,13 @@ export default function Home() {
             className="mt-4 text-lg text-gray-200"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
+            transition={{ delay: 0.2 }}
           >
             Plan your studies smartly and stay consistent.
           </motion.p>
 
-          <Link href="/planner">
-            <motion.button
-              className="mt-8 rounded-md border border-white px-6 py-3 text-white"
-              whileHover={{
-                scale: 1.05,
-                backgroundColor: "#ffffff",
-                color: "#000000",
-              }}
-              whileTap={{ scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 300 }}
-            >
-              Start Planning
-            </motion.button>
-          </Link>
+          {/* ✅ Auth UI actually rendered */}
+          <AuthStatus />
         </motion.div>
       </div>
     </motion.div>

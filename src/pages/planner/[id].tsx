@@ -1,10 +1,12 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-
+import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/context/AuthContext";
+import Link from "next/link";
 const MOTIVATIONAL_QUOTES = [
-  "Small steps every day forge the path to massive breakthroughs.",
+   "Small steps every day forge the path to massive breakthroughs.",
   "Consistency creates the momentum that intensity can never match.",
   "Build a life today that your future self will be proud to inherit.",
   "Chase the beauty of progress; leave the ghost of perfection behind.",
@@ -110,75 +112,115 @@ const MOTIVATIONAL_QUOTES = [
 export default function PlannerResult() {
   const router = useRouter();
   const { id } = router.query;
+  const { user } = useAuth(); // Get logged-in user
 
   const [plan, setPlan] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [quote, setQuote] = useState("");
+  const [showSaveInput, setShowSaveInput] = useState(false); // Toggle input visibility
+  const [planName, setPlanName] = useState("My Study Plan"); // Default name
+  const [saveStatus, setSaveStatus] = useState(""); // Success/error message
 
   useEffect(() => {
     if (!id) return;
 
     const fetchPlan = async () => {
-      const docRef = doc(db, "studyPlans", id as string);
-      const docSnap = await getDoc(docRef);
-
-      if (docSnap.exists()) {
-        setPlan(docSnap.data().plan);
-
-        const randomIndex = Math.floor(
-          Math.random() * MOTIVATIONAL_QUOTES.length
-        );
+      const snap = await getDoc(doc(db, "studyPlans", id as string)); // Assuming original collection is 'studyPlans'
+      if (snap.exists()) {
+        setPlan(snap.data().plan);
+        const randomIndex = Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length);
         setQuote(MOTIVATIONAL_QUOTES[randomIndex]);
       }
-
       setLoading(false);
     };
 
     fetchPlan();
   }, [id]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-white bg-[#0a0a0a]">
-        Loading your study plan...
-      </div>
-    );
-  }
+  const handleSave = async () => {
+    if (!user) {
+      setSaveStatus("Please sign in to save plans.");
+      return;
+    }
+    if (!planName.trim()) {
+      setSaveStatus("Please enter a name.");
+      return;
+    }
 
-  if (!plan) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-white bg-[#0a0a0a]">
-        Plan not found.
-      </div>
-    );
-  }
+    try {
+      await addDoc(collection(db, "users", user.uid, "plans"), {
+        name: planName,
+        originalPlanId: id,  //save public id
+      
+        plan: plan.timetable, 
+        revisionDays: plan.revisionDays || [],
+        restDays: plan.restDays || [],
+        tips: plan.tips || [],
+        createdAt: serverTimestamp(),
+      });
+      setSaveStatus("Plan saved successfully!");
+      setShowSaveInput(false);
+    } catch (error) {
+      setSaveStatus("Failed to save plan.");
+    }
+  };
+
+  if (loading) return <div className="min-h-screen grid place-items-center text-white">Loading your study plan...</div>;
+  if (!plan) return <div className="min-h-screen grid place-items-center text-white">Plan not found.</div>;
 
   return (
     <div
-      style={{
-        backgroundImage:
-          "linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.5)), url('/b1.jpg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-        backgroundAttachment: "fixed",
-        minHeight: "100vh",
-      }}
-      className="text-white p-4 md:p-8"
+      className="min-h-screen bg-black/90 text-white p-4 md:p-8"
+      style={{ backgroundImage: "url('/b1.jpg')", backgroundSize: "cover", backgroundPosition: "center" }} // Restore background
     >
-      {/* -------- Title -------- */}
+      {/* Save Plan Button */}
+      <div className="max-w-6xl mx-auto mb-8 flex justify-end">
+        {!showSaveInput ? (
+          <button
+            onClick={() => setShowSaveInput(true)}
+            className="bg-green-600 hover:bg-green-700 px-6 py-2 rounded-lg text-white font-medium transition"
+          >
+            Save Plan
+          </button>
+        ) : (
+          <div className="flex items-center gap-4">
+            <input
+              type="text"
+              value={planName}
+              onChange={(e) => setPlanName(e.target.value)}
+              placeholder="Enter plan name"
+              className="bg-white/10 border border-white/20 px-4 py-2 rounded-lg text-white"
+            />
+            <button
+              onClick={handleSave}
+              className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg text-white font-medium transition"
+            >
+              Save
+            </button>
+            <button
+              onClick={() => setShowSaveInput(false)}
+              className="bg-gray-600 hover:bg-gray-700 px-6 py-2 rounded-lg text-white font-medium transition"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+        {saveStatus && <p className="ml-4 text-green-400">{saveStatus}</p>}
+      </div>
+
+      {/* Original Title */}
       <h1 className="text-4xl font-bold text-center mb-8 drop-shadow-lg">
         Your Study Plan
       </h1>
 
-      {/* -------- Quote -------- */}
+      {/* Original Quote */}
       <div className="max-w-2xl mx-auto mb-12">
         <div className="rounded-xl bg-purple-600/20 backdrop-blur-md border border-purple-400/30 p-4 text-center italic text-purple-100 shadow-lg">
           "{quote}"
         </div>
       </div>
 
-      {/* -------- Timetable -------- */}
+      {/* Original Timetable */}
       <div className="grid gap-8 md:grid-cols-2 max-w-6xl mx-auto">
         {Object.entries(plan.timetable)
           .sort(([a], [b]) => {
@@ -207,7 +249,16 @@ export default function PlannerResult() {
           ))}
       </div>
 
-      {/* -------- Study Tips -------- */}
+<div className="max-w-6xl mx-auto mb-8 flex justify-center">
+  {user && (
+    <Link href="/my-plans">
+      <button className="bg-purple-600 hover:bg-purple-700 px-8 py-3 rounded-lg text-white font-bold text-lg transition shadow-lg">
+        ← My Plans
+      </button>
+    </Link>
+  )}
+</div>
+      {/* Original Study Tips */}
       {plan.tips && (
         <div className="mt-14 max-w-3xl mx-auto rounded-2xl bg-white/10 backdrop-blur-xl p-8 border border-white/20 shadow-2xl">
           <h3 className="text-2xl font-bold mb-4 text-purple-200">
