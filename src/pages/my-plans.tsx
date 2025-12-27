@@ -78,7 +78,6 @@ export default function MyPlans() {
               key={p.id}
               className="relative rounded-2xl bg-white/10 backdrop-blur-lg p-6 border border-white/20 shadow-2xl hover:scale-[1.02] transition"
             >
-              {/* ❌ Delete Button */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -90,7 +89,6 @@ export default function MyPlans() {
                 ×
               </button>
 
-              {/* Card Content */}
               <Link href={`/planner/${p.originalPlanId}`}>
                 <div className="cursor-pointer">
                   <h2 className="text-2xl font-bold mb-2">

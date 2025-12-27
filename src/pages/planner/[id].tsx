@@ -98,7 +98,7 @@ export default function PlannerResult() {
         backgroundPosition: "center",
       }}
     >
-      {/* Save Plan */}
+
       <div className="max-w-6xl mx-auto mb-8 flex justify-end">
         {!showSaveInput ? (
           <button
@@ -125,19 +125,18 @@ export default function PlannerResult() {
         {saveStatus && <p className="ml-4 text-green-400">{saveStatus}</p>}
       </div>
 
-      {/* Title */}
+
       <h1 className="text-4xl font-bold text-center mb-8">
         Your Study Plan
       </h1>
 
-      {/* Quote */}
       <div className="max-w-2xl mx-auto mb-12">
         <div className="rounded-xl bg-purple-600/20 backdrop-blur-md border border-purple-400/30 p-4 text-center italic text-purple-100 shadow-lg">
           "{quote}"
         </div>
       </div>
 
-      {/* 🌟 DATE BASED GLASS CARDS */}
+
       <div className="grid gap-8 md:grid-cols-2 max-w-6xl mx-auto">
         {Object.entries(timetableByDate)
           .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
@@ -179,7 +178,6 @@ export default function PlannerResult() {
           ))}
       </div>
 
-      {/* Back */}
       {user && (
         <div className="mt-12 text-center">
           <Link href="/my-plans">

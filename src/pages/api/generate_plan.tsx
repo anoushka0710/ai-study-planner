@@ -3,7 +3,6 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
-/* 🔹 NEW helper (small & safe) */
 function getDatesBetween(start: Date, end: Date) {
   const dates: string[] = [];
   const current = new Date(start);
@@ -97,7 +96,6 @@ FORMAT:
     const plan = JSON.parse(rawText);
     if (!plan?.timetable) throw new Error("Invalid AI response");
 
-    /* 🔹 NEW LOGIC (THIS IS THE CORE CHANGE) */
 
     const dateList = getDatesBetween(new Date(), new Date(examDate));
 
@@ -110,7 +108,6 @@ FORMAT:
       }
     });
 
-    /* 🔹 SAVE BOTH VERSIONS (SAFE) */
     const docRef = await addDoc(collection(db, "studyPlans"), {
       plan,
       timetableByDate,
