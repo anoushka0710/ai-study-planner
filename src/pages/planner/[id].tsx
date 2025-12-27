@@ -19,7 +19,6 @@ const MOTIVATIONAL_QUOTES = [
   "Be relentless in your pursuit and unshakable in your commitment.",
   "You possess the strength to turn 'impossible' into your reality.",
   "Grit is the bridge between the dream in your heart and the reality in your hands."
-  // Add more as needed
 ];
 
 export default function PlannerResult() {
@@ -34,6 +33,10 @@ export default function PlannerResult() {
   const [showSaveInput, setShowSaveInput] = useState(false);
   const [planName, setPlanName] = useState("");
   const [saveStatus, setSaveStatus] = useState("");
+  
+  // State for Checklist and completion popup
+  const [completedTasks, setCompletedTasks] = useState<Record<string, boolean>>({});
+  const [showHooray, setShowHooray] = useState(false);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -56,6 +59,37 @@ export default function PlannerResult() {
     fetchPlan();
   }, [router.isReady, id]);
 
+  const toggleTask = (day: string, subject: string, action: string) => {
+    const taskId = `${day}-${subject}-${action}`;
+    setCompletedTasks(prev => {
+      const newState = { ...prev, [taskId]: !prev[taskId] };
+      checkDayCompletion(day, newState);
+      return newState;
+    });
+  };
+
+  const checkDayCompletion = (day: string, currentTasks: Record<string, boolean>) => {
+    const tasks = plan.timetable[day];
+    const grouped = groupTasks(tasks);
+    
+    let allDone = true;
+    let hasTasks = false;
+
+    Object.entries(grouped).forEach(([subject, actions]) => {
+      Object.keys(actions).forEach(action => {
+        hasTasks = true;
+        if (!currentTasks[`${day}-${subject}-${action}`]) {
+          allDone = false;
+        }
+      });
+    });
+
+    if (hasTasks && allDone) {
+      setShowHooray(true);
+      setTimeout(() => setShowHooray(false), 4000); 
+    }
+  };
+
   const handleSave = async () => {
     if (!user) {
       setSaveStatus("Please sign in to save your plan.");
@@ -68,12 +102,12 @@ export default function PlannerResult() {
 
     try {
       if (typeof id !== "string") {
-  setSaveStatus("Invalid plan ID. Please refresh and try again.");
-  return;
-}
+        setSaveStatus("Invalid plan ID. Please refresh and try again.");
+        return;
+      }
       await addDoc(collection(db, "users", user.uid, "plans"), {
         name: planName,
-        originalPlanId: id, // Important for linking back
+        originalPlanId: id,
         plan: plan.timetable,
         tips: plan.tips || [],
         createdAt: serverTimestamp(),
@@ -94,17 +128,12 @@ export default function PlannerResult() {
     
     tasks.forEach((task: string) => {
       if (!task || typeof task !== 'string') return;
-      
       const parts = task.split(" : ");
       if (parts.length < 2) return;
-      
       const subject = parts[0].trim();
-      const rest = parts.slice(1).join(" : "); // Handle cases where ":" might be in the action
-      
-      // Try to match format: "Action (X min)" or "Action (X)"
+      const rest = parts.slice(1).join(" : ");
       const match = rest.match(/(.+?)\s*\((\d+)\s*(?:min|minutes?)?\)/i);
       if (!match) return;
-      
       const action = match[1].trim();
       const mins = parseInt(match[2]);
       if (isNaN(mins) || mins <= 0) return;
@@ -131,13 +160,29 @@ export default function PlannerResult() {
 
   return (
     <div
-      className="min-h-screen bg-fixed bg-cover bg-center text-white"
+      className="min-h-screen bg-fixed bg-cover bg-center text-white relative"
       style={{ backgroundImage: "url('/b1.jpg')" }}
     >
+      {/* FIXED HOORAY POPUP */}
+      <AnimatePresence>
+        {showHooray && (
+          <div className="fixed inset-0 pointer-events-none z-[100] flex flex-col items-center justify-start pt-10">
+            <motion.div 
+              initial={{ opacity: 0, y: -100, scale: 0.8 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -100, scale: 0.8 }}
+              className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-10 py-5 rounded-full shadow-[0_0_50px_rgba(34,197,94,0.5)] font-black text-2xl border-2 border-white/50 backdrop-blur-md pointer-events-auto"
+            >
+              🎉 Hooray! You completed all tasks for the day! 🚀
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <div className="min-h-screen bg-black/60 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-6 py-12">
 
-          {/* Top Bar: Save Plan + My Plans Button */}
+          {/* Top Bar */}
           <div className="flex justify-between items-center mb-10">
             <Link href="/my-plans">
               <button className="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-xl text-white font-bold transition shadow-lg">
@@ -188,7 +233,6 @@ export default function PlannerResult() {
             </p>
           )}
 
-          {/* Title & Quote */}
           <h1 className="text-5xl font-bold text-center mb-10 drop-shadow-2xl">
             Your Study Plan
           </h1>
@@ -207,7 +251,6 @@ export default function PlannerResult() {
             </div>
           )}
 
-          {/* Timetable Grid */}
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 items-start">
             {plan.timetable ? Object.entries(plan.timetable as Record<string, string[]>)
               .sort(([a], [b]) => {
@@ -273,15 +316,27 @@ export default function PlannerResult() {
                                 {subject}
                               </h3>
                               <ul className="space-y-3">
-                                {Object.entries(actions).map(([action, mins]) => (
-                                  <li key={action} className="flex justify-between items-center text-lg">
-                                    <span className="flex items-center gap-3">
-                                      <span className="text-2xl">{getIcon(action)}</span>
-                                      <span>{action}</span>
-                                    </span>
-                                    <span className="text-purple-300 font-medium">{mins}m</span>
-                                  </li>
-                                ))}
+                                {Object.entries(actions).map(([action, mins]) => {
+                                  const isChecked = completedTasks[`${day}-${subject}-${action}`];
+                                  return (
+                                    <li key={action} className="flex justify-between items-center text-lg">
+                                      <div className="flex items-center gap-4">
+                                        <div 
+                                          onClick={() => toggleTask(day, subject, action)}
+                                          className={`w-6 h-6 rounded border-2 flex items-center justify-center cursor-pointer transition-all ${isChecked ? 'bg-green-500 border-green-500 scale-110' : 'border-white/30 hover:border-purple-400'}`}
+                                        >
+                                          {isChecked && <span className="text-white text-xs font-bold">✓</span>}
+                                        </div>
+                                        {/* REMOVED line-through AND grayscale - Added subtle opacity-70 */}
+                                        <span className={`flex items-center gap-3 transition-all ${isChecked ? 'opacity-70' : 'opacity-100'}`}>
+                                          <span className="text-2xl">{getIcon(action)}</span>
+                                          <span>{action}</span>
+                                        </span>
+                                      </div>
+                                      <span className={`text-purple-300 font-medium ${isChecked ? 'opacity-70' : ''}`}>{mins}m</span>
+                                    </li>
+                                  );
+                                })}
                               </ul>
                             </div>
                           ))}
