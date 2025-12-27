@@ -89,8 +89,20 @@ export default function MyPlans() {
                 ×
               </button>
 
-              <Link href={`/planner/${p.originalPlanId}`}>
-                <div className="cursor-pointer">
+              {p.originalPlanId ? (
+                <Link href={`/planner/${p.originalPlanId}`}>
+                  <div className="cursor-pointer">
+                    <h2 className="text-2xl font-bold mb-2">
+                      {p.name}
+                    </h2>
+                    <p className="text-white/60">
+                      Created:{" "}
+                      {p.createdAt?.toDate().toLocaleDateString()}
+                    </p>
+                  </div>
+                </Link>
+              ) : (
+                <div>
                   <h2 className="text-2xl font-bold mb-2">
                     {p.name}
                   </h2>
@@ -98,8 +110,11 @@ export default function MyPlans() {
                     Created:{" "}
                     {p.createdAt?.toDate().toLocaleDateString()}
                   </p>
+                  <p className="text-red-400 text-sm mt-2">
+                    Plan link unavailable
+                  </p>
                 </div>
-              </Link>
+              )}
             </div>
           ))}
         </div>

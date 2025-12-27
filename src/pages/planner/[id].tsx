@@ -36,12 +36,17 @@ export default function PlannerResult() {
   const [saveStatus, setSaveStatus] = useState("");
 
   useEffect(() => {
-    if (!id) return;
+    if (!router.isReady) return;
+    if (!id || id === 'undefined' || typeof id !== 'string') {
+      setLoading(false);
+      return;
+    }
 
     const fetchPlan = async () => {
-      const snap = await getDoc(doc(db, "studyPlans", id as string));
+      const snap = await getDoc(doc(db, "studyPlans", id));
       if (snap.exists()) {
-        setPlan(snap.data().plan);
+        const planData = snap.data().plan;
+        setPlan(planData);
         const randomIndex = Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length);
         setQuote(MOTIVATIONAL_QUOTES[randomIndex]);
       }
@@ -49,7 +54,7 @@ export default function PlannerResult() {
     };
 
     fetchPlan();
-  }, [id]);
+  }, [router.isReady, id]);
 
   const handleSave = async () => {
     if (!user) {
@@ -62,6 +67,10 @@ export default function PlannerResult() {
     }
 
     try {
+      if (typeof id !== "string") {
+  setSaveStatus("Invalid plan ID. Please refresh and try again.");
+  return;
+}
       await addDoc(collection(db, "users", user.uid, "plans"), {
         name: planName,
         originalPlanId: id, // Important for linking back
@@ -80,13 +89,25 @@ export default function PlannerResult() {
   if (!plan) return <div className="min-h-screen grid place-items-center text-white text-2xl">Plan not found.</div>;
 
   const groupTasks = (tasks: string[]) => {
-    const grouped: any = {};
+    const grouped: Record<string, Record<string, number>> = {};
+    if (!tasks || !Array.isArray(tasks)) return grouped;
+    
     tasks.forEach((task: string) => {
-      const [subject, rest] = task.split(" : ");
-      const match = rest.match(/(.+) \((\d+) min\)/);
+      if (!task || typeof task !== 'string') return;
+      
+      const parts = task.split(" : ");
+      if (parts.length < 2) return;
+      
+      const subject = parts[0].trim();
+      const rest = parts.slice(1).join(" : "); // Handle cases where ":" might be in the action
+      
+      // Try to match format: "Action (X min)" or "Action (X)"
+      const match = rest.match(/(.+?)\s*\((\d+)\s*(?:min|minutes?)?\)/i);
       if (!match) return;
+      
       const action = match[1].trim();
       const mins = parseInt(match[2]);
+      if (isNaN(mins) || mins <= 0) return;
 
       if (!grouped[subject]) grouped[subject] = {};
       grouped[subject][action] = (grouped[subject][action] || 0) + mins;
@@ -102,9 +123,9 @@ export default function PlannerResult() {
     return "✦";
   };
 
-  const calculateTotalMinutes = (grouped: any) => {
-    return Object.values(grouped).reduce((total: number, actions: any) => {
-      return total + Object.values(actions as any).reduce((sum: number, mins: any) => sum + mins, 0);
+  const calculateTotalMinutes = (grouped: Record<string, Record<string, number>>) => {
+    return Object.values(grouped).reduce((total, actions) => {
+      return total + Object.values(actions).reduce((sum, mins) => sum + mins, 0);
     }, 0);
   };
 
@@ -188,24 +209,24 @@ export default function PlannerResult() {
 
           {/* Timetable Grid */}
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 items-start">
-  {Object.entries(plan.timetable as Record<string, string[]>)
-    .sort(([a], [b]) => {
-      const numA = Number(a.match(/\d+/)?.[0]) || 0;
-      const numB = Number(b.match(/\d+/)?.[0]) || 0;
-      return numA - numB;
-    })
-    .map(([day, tasks]) => {
-      const grouped = groupTasks(tasks);
-      const totalMinutes = calculateTotalMinutes(grouped);
-      const hasContent = Object.keys(grouped).length > 0;
+            {plan.timetable ? Object.entries(plan.timetable as Record<string, string[]>)
+              .sort(([a], [b]) => {
+                const numA = Number(a.match(/\d+/)?.[0]) || 0;
+                const numB = Number(b.match(/\d+/)?.[0]) || 0;
+                return numA - numB;
+              })
+              .map(([day, tasks]) => {
+                const grouped = groupTasks(tasks);
+                const totalMinutes = calculateTotalMinutes(grouped);
+                const hasContent = Object.keys(grouped).length > 0;
 
-      return (
-        <motion.div
-          key={day}
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl overflow-hidden shadow-2xl hover:shadow-purple-500/20 transition-all duration-300"
-        >
+                return (
+                  <motion.div
+                    key={day}
+                    initial={{ opacity: 0, y: 40 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl overflow-hidden shadow-2xl hover:shadow-purple-500/20 transition-all duration-300"
+                  >
                     <button
                       onClick={() => {
                         if (!hasContent) return;
@@ -243,7 +264,7 @@ export default function PlannerResult() {
                           transition={{ duration: 0.4 }}
                           className="px-8 pb-8 space-y-6"
                         >
-                          {Object.entries(grouped as Record<string, Record<string, number>>).map(([subject, actions]) => (
+                          {Object.entries(grouped).map(([subject, actions]: [string, Record<string, number>]) => (
                             <div
                               key={subject}
                               className="bg-black/30 rounded-2xl p-6 border border-white/10"
@@ -275,7 +296,11 @@ export default function PlannerResult() {
                     )}
                   </motion.div>
                 );
-              })}
+              }) : (
+                <div className="col-span-full text-center text-white/70 text-lg">
+                  No timetable data available.
+                </div>
+              )}
           </div>
 
           {/* Tips */}
