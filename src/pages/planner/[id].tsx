@@ -52,6 +52,18 @@ export default function PlannerResult() {
         setPlan(planData);
         const randomIndex = Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length);
         setQuote(MOTIVATIONAL_QUOTES[randomIndex]);
+        
+        // Load completed tasks from localStorage
+        const storageKey = `completedTasks_${id}`;
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            setCompletedTasks(parsed);
+          } catch (e) {
+            console.error("Error loading completed tasks:", e);
+          }
+        }
       }
       setLoading(false);
     };
@@ -60,10 +72,17 @@ export default function PlannerResult() {
   }, [router.isReady, id]);
 
   const toggleTask = (day: string, subject: string, action: string) => {
+    if (!id || typeof id !== 'string') return;
+    
     const taskId = `${day}-${subject}-${action}`;
     setCompletedTasks(prev => {
       const newState = { ...prev, [taskId]: !prev[taskId] };
       checkDayCompletion(day, newState);
+      
+      // Save to localStorage
+      const storageKey = `completedTasks_${id}`;
+      localStorage.setItem(storageKey, JSON.stringify(newState));
+      
       return newState;
     });
   };
@@ -171,7 +190,7 @@ export default function PlannerResult() {
               initial={{ opacity: 0, y: -100, scale: 0.8 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -100, scale: 0.8 }}
-              className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-10 py-5 rounded-full shadow-[0_0_50px_rgba(34,197,94,0.5)] font-black text-2xl border-2 border-white/50 backdrop-blur-md pointer-events-auto"
+              className="bg-gradient-to-r from-purple-500 to-emerald-600 text-white px-10 py-5 rounded-full shadow-[0_0_50px_rgba(34,197,94,0.5)] font-black text-2xl border-2 border-white/50 backdrop-blur-md pointer-events-auto"
             >
               🎉 Hooray! You completed all tasks for the day! 🚀
             </motion.div>
