@@ -90,15 +90,17 @@ export default function PlannerResult() {
   }
 
   return (
-    <div
-      className="min-h-screen bg-black/90 text-white p-4 md:p-8"
-      style={{
-        backgroundImage: "url('/b1.jpg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-    >
-
+ <div
+  className="min-h-screen text-white p-4 md:p-8"
+  style={{
+    backgroundImage:
+      "linear-gradient(rgba(0,0,0,0.15), rgba(0,0,0,0.25)), url('/b1.jpg')",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
+    backgroundAttachment: "fixed",
+  }}
+>
       <div className="max-w-6xl mx-auto mb-8 flex justify-end">
         {!showSaveInput ? (
           <button
