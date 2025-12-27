@@ -10,6 +10,7 @@ import {
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
+import { motion } from "framer-motion";
 
 const MOTIVATIONAL_QUOTES = [
   "Small steps every day forge the path to massive breakthroughs.",
@@ -90,25 +91,30 @@ export default function PlannerResult() {
   }
 
   return (
- <div
-  className="min-h-screen text-white p-4 md:p-8"
-  style={{
-    backgroundImage:
-      "linear-gradient(rgba(0,0,0,0.15), rgba(0,0,0,0.25)), url('/b1.jpg')",
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-    backgroundRepeat: "no-repeat",
-    backgroundAttachment: "fixed",
-  }}
->
+    <div
+      className="min-h-screen text-white p-4 md:p-8"
+      style={{
+        backgroundImage:
+          "linear-gradient(rgba(0,0,0,0.15), rgba(0,0,0,0.25)), url('/b1.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        backgroundAttachment: "fixed",
+      }}
+    >
       <div className="max-w-6xl mx-auto mb-8 flex justify-end">
         {!showSaveInput ? (
-          <button
+          <motion.button
             onClick={() => setShowSaveInput(true)}
-            className="bg-green-600 hover:bg-green-700 px-6 py-2 rounded-lg font-medium"
+            whileHover={{
+              scale: 1.08,
+              boxShadow: "0 0 24px rgba(34,197,94,0.9)",
+            }}
+            whileTap={{ scale: 0.95 }}
+            className="bg-green-600 px-6 py-2 rounded-lg font-medium"
           >
             Save Plan
-          </button>
+          </motion.button>
         ) : (
           <div className="flex gap-3 items-center">
             <input
@@ -116,17 +122,21 @@ export default function PlannerResult() {
               onChange={(e) => setPlanName(e.target.value)}
               className="bg-white/10 border border-white/20 px-4 py-2 rounded-lg text-white"
             />
-            <button
+            <motion.button
               onClick={handleSave}
-              className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg"
+              whileHover={{
+                scale: 1.08,
+                boxShadow: "0 0 22px rgba(59,130,246,0.9)",
+              }}
+              whileTap={{ scale: 0.95 }}
+              className="bg-blue-600 px-6 py-2 rounded-lg"
             >
               Save
-            </button>
+            </motion.button>
           </div>
         )}
         {saveStatus && <p className="ml-4 text-green-400">{saveStatus}</p>}
       </div>
-
 
       <h1 className="text-4xl font-bold text-center mb-8">
         Your Study Plan
@@ -137,7 +147,6 @@ export default function PlannerResult() {
           "{quote}"
         </div>
       </div>
-
 
       <div className="grid gap-8 md:grid-cols-2 max-w-6xl mx-auto">
         {Object.entries(timetableByDate)
@@ -183,9 +192,16 @@ export default function PlannerResult() {
       {user && (
         <div className="mt-12 text-center">
           <Link href="/my-plans">
-            <button className="bg-purple-600 hover:bg-purple-700 px-8 py-3 rounded-lg font-bold shadow-lg">
-              ← My Plans
-            </button>
+            <motion.button
+              whileHover={{
+                scale: 1.1,
+                boxShadow: "0 0 28px rgba(168,85,247,0.95)",
+              }}
+              whileTap={{ scale: 0.95 }}
+              className="bg-purple-600 px-8 py-3 rounded-lg font-bold shadow-lg"
+            >
+              My Plans
+            </motion.button>
           </Link>
         </div>
       )}

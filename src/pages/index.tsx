@@ -13,33 +13,58 @@ function AuthStatus() {
   if (user) {
     return (
       <div className="mt-6 text-white">
-        <p className="mb-3">Signed in as {user.displayName}</p>
+        <p className="mb-4 text-white/90">
+          Signed in as <span className="font-semibold">{user.displayName}</span>
+        </p>
 
         <div className="flex gap-4">
-          <button
+          {/* Logout Button */}
+          <motion.button
             onClick={logout}
-            className="bg-red-600 px-4 py-2 rounded"
+            whileHover={{
+              scale: 1.05,
+              boxShadow: "0px 0px 18px rgba(239,68,68,0.8)",
+            }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 300 }}
+            className="bg-red-600 px-5 py-2 rounded-lg font-medium"
           >
             Logout
-          </button>
+          </motion.button>
 
+          {/* Start Planning Button */}
           <Link href="/planner">
-            <button className="border border-white px-6 py-2 rounded">
+            <motion.button
+              whileHover={{
+                scale: 1.05,
+                boxShadow: "0px 0px 18px rgba(255,255,255,0.35)",
+              }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 300 }}
+              className="border border-white px-6 py-2 rounded-lg font-medium"
+            >
               Start Planning
-            </button>
+            </motion.button>
           </Link>
         </div>
       </div>
     );
   }
 
+  /* Sign In Button */
   return (
-    <button
+    <motion.button
       onClick={login}
-      className="mt-6 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold"
+      whileHover={{
+        scale: 1.07,
+        boxShadow: "0px 0px 20px rgba(59,130,246,0.9)",
+      }}
+      whileTap={{ scale: 0.95 }}
+      transition={{ type: "spring", stiffness: 300 }}
+      className="mt-6 bg-blue-600 text-white px-7 py-3 rounded-xl font-semibold"
     >
       Sign in with Google
-    </button>
+    </motion.button>
   );
 }
 
@@ -60,6 +85,8 @@ export default function Home() {
         animate={{ scale: 1 }}
         transition={{ duration: 1.2, ease: "easeOut" }}
       />
+
+      {/* Overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/20 to-black/40" />
 
       {/* Content */}
@@ -87,7 +114,7 @@ export default function Home() {
             Plan your studies smartly and stay consistent.
           </motion.p>
 
-          {/* ✅ Auth UI actually rendered */}
+          {/* Auth UI */}
           <AuthStatus />
         </motion.div>
       </div>
