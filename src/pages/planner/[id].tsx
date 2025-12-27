@@ -10,14 +10,13 @@ import {
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 const MOTIVATIONAL_QUOTES = [
   "Small steps every day forge the path to massive breakthroughs.",
   "Consistency creates the momentum that intensity can never match.",
   "Build a life today that your future self will be proud to inherit.",
   "Do not work until you are tired; work until you are finished.",
-  "Do not let the fear of a long journey prevent you from taking the first step.",
 ];
 
 export default function PlannerResult() {
@@ -25,10 +24,10 @@ export default function PlannerResult() {
   const { id } = router.query;
   const { user } = useAuth();
 
-  const [plan, setPlan] = useState<any>(null);
   const [timetableByDate, setTimetableByDate] = useState<Record<string, string[]>>({});
-  const [loading, setLoading] = useState(true);
+  const [expandedDate, setExpandedDate] = useState<string | null>(null);
   const [quote, setQuote] = useState("");
+  const [loading, setLoading] = useState(true);
   const [showSaveInput, setShowSaveInput] = useState(false);
   const [planName, setPlanName] = useState("My Study Plan");
   const [saveStatus, setSaveStatus] = useState("");
@@ -40,7 +39,6 @@ export default function PlannerResult() {
       const snap = await getDoc(doc(db, "studyPlans", id as string));
       if (snap.exists()) {
         const data = snap.data();
-        setPlan(data.plan);
         setTimetableByDate(data.timetableByDate || {});
         setQuote(
           MOTIVATIONAL_QUOTES[
@@ -55,23 +53,17 @@ export default function PlannerResult() {
   }, [id]);
 
   const handleSave = async () => {
-    if (!user) {
-      setSaveStatus("Please sign in to save plans.");
-      return;
-    }
+    if (!user) return;
 
-    try {
-      await addDoc(collection(db, "users", user.uid, "plans"), {
-        name: planName,
-        originalPlanId: id,
-        timetableByDate,
-        createdAt: serverTimestamp(),
-      });
-      setSaveStatus("Plan saved successfully!");
-      setShowSaveInput(false);
-    } catch {
-      setSaveStatus("Failed to save plan.");
-    }
+    await addDoc(collection(db, "users", user.uid, "plans"), {
+      name: planName,
+      originalPlanId: id,
+      timetableByDate,
+      createdAt: serverTimestamp(),
+    });
+
+    setSaveStatus("Plan saved!");
+    setShowSaveInput(false);
   };
 
   if (loading) {
@@ -82,60 +74,61 @@ export default function PlannerResult() {
     );
   }
 
-  if (!plan) {
-    return (
-      <div className="min-h-screen grid place-items-center text-white">
-        Plan not found.
-      </div>
-    );
-  }
+  /* ---------- helpers ---------- */
+
+  const parseTasksBySubject = (tasks: string[]) => {
+    const map: Record<string, string[]> = {};
+
+    tasks.forEach((t) => {
+      const [subject, rest] = t.split(" : ");
+      if (!map[subject]) map[subject] = [];
+      map[subject].push(rest);
+    });
+
+    return map;
+  };
+
+  const getTotalTime = (tasks: string[]) =>
+    tasks.reduce((sum, t) => {
+      const m = t.match(/\((\d+)m\)/);
+      return sum + (m ? Number(m[1]) : 0);
+    }, 0);
 
   return (
     <div
-      className="min-h-screen text-white p-4 md:p-8"
+      className="min-h-screen text-white p-6"
       style={{
         backgroundImage:
-          "linear-gradient(rgba(0,0,0,0.15), rgba(0,0,0,0.25)), url('/b1.jpg')",
+          "linear-gradient(rgba(0,0,0,.2),rgba(0,0,0,.4)),url('/b1.jpg')",
         backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
         backgroundAttachment: "fixed",
       }}
     >
-      <div className="max-w-6xl mx-auto mb-8 flex justify-end">
+      {/* Save */}
+      <div className="max-w-6xl mx-auto flex justify-end mb-6">
         {!showSaveInput ? (
-          <motion.button
+          <button
             onClick={() => setShowSaveInput(true)}
-            whileHover={{
-              scale: 1.08,
-              boxShadow: "0 0 24px rgba(34,197,94,0.9)",
-            }}
-            whileTap={{ scale: 0.95 }}
-            className="bg-green-600 px-6 py-2 rounded-lg font-medium"
+            className="bg-green-600 px-6 py-2 rounded-lg"
           >
             Save Plan
-          </motion.button>
+          </button>
         ) : (
-          <div className="flex gap-3 items-center">
+          <div className="flex gap-3">
             <input
               value={planName}
               onChange={(e) => setPlanName(e.target.value)}
-              className="bg-white/10 border border-white/20 px-4 py-2 rounded-lg text-white"
+              className="bg-white/10 px-3 py-2 rounded-lg"
             />
-            <motion.button
+            <button
               onClick={handleSave}
-              whileHover={{
-                scale: 1.08,
-                boxShadow: "0 0 22px rgba(59,130,246,0.9)",
-              }}
-              whileTap={{ scale: 0.95 }}
-              className="bg-blue-600 px-6 py-2 rounded-lg"
+              className="bg-blue-600 px-5 py-2 rounded-lg"
             >
               Save
-            </motion.button>
+            </button>
           </div>
         )}
-        {saveStatus && <p className="ml-4 text-green-400">{saveStatus}</p>}
+        {saveStatus && <span className="ml-4 text-green-400">{saveStatus}</span>}
       </div>
 
       <h1 className="text-4xl font-bold text-center mb-8">
@@ -143,65 +136,100 @@ export default function PlannerResult() {
       </h1>
 
       <div className="max-w-2xl mx-auto mb-12">
-        <div className="rounded-xl bg-purple-600/20 backdrop-blur-md border border-purple-400/30 p-4 text-center italic text-purple-100 shadow-lg">
+        <div className="bg-purple-600/20 p-4 rounded-xl text-center italic">
           "{quote}"
         </div>
       </div>
 
-      <div className="grid gap-8 md:grid-cols-2 max-w-6xl mx-auto">
+      {/* ---------- DAY CARDS ---------- */}
+      <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
         {Object.entries(timetableByDate)
           .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
-          .map(([date, tasks]) => (
-            <div
-              key={date}
-              className="
-                rounded-2xl
-                bg-white/15
-                backdrop-blur-xl
-                border border-white/25
-                shadow-[0_8px_32px_rgba(0,0,0,0.45)]
-                p-6
-                transition
-                hover:bg-white/20
-                hover:scale-[1.015]
-              "
-            >
-              <h2 className="text-2xl font-semibold mb-4 border-b border-white/20 pb-2">
-                {new Date(date).toLocaleDateString("en-IN", {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })}
-              </h2>
+          .map(([date, tasks]) => {
+            const isOpen = expandedDate === date;
+            const grouped = parseTasksBySubject(tasks);
+            const totalTime = getTotalTime(tasks);
 
-              <ul className="space-y-3">
-                {tasks.map((task, i) => (
-                  <li key={i} className="flex gap-3 text-white/90">
-                    <span className="text-purple-400 mt-1">✦</span>
-                    <span className="text-lg leading-snug font-medium">
-                      {task}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+            return (
+              <motion.div
+                key={date}
+                layout
+                onClick={() =>
+                  setExpandedDate(isOpen ? null : date)
+                }
+                className="cursor-pointer rounded-2xl bg-white/15 backdrop-blur-xl p-6 border border-white/25 shadow-xl"
+              >
+                {/* HEADER */}
+                <div className="flex justify-between items-center mb-3">
+                  <h2 className="text-xl font-semibold">
+                    {new Date(date).toLocaleDateString("en-IN", {
+                      weekday: "long",
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </h2>
+                  <span className="text-sm text-purple-300">
+                    ⏱ {Math.floor(totalTime / 60)}h {totalTime % 60}m
+                  </span>
+                </div>
+
+                {/* COLLAPSED */}
+                {!isOpen && (
+                  <p className="text-white/70">
+                    {tasks.slice(0, 2).join(" • ")}
+                    {tasks.length > 2 && " ..."}
+                  </p>
+                )}
+
+                {/* EXPANDED */}
+                <AnimatePresence>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="space-y-5 mt-4"
+                    >
+                      {Object.entries(grouped).map(
+                        ([subject, items]) => (
+                          <div
+                            key={subject}
+                            className="bg-black/30 rounded-xl p-4"
+                          >
+                            <h3 className="text-lg font-bold mb-2">
+                              {subject.toUpperCase()}
+                            </h3>
+                            <ul className="space-y-2">
+                              {items.map((i, idx) => (
+                                <li
+                                  key={idx}
+                                  className="flex justify-between text-white/90"
+                                >
+                                  <span>{i.replace(/\(.*?\)/, "")}</span>
+                                  <span className="text-purple-300">
+                                    {i.match(/\(.*?\)/)?.[0]}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            );
+          })}
       </div>
 
       {user && (
         <div className="mt-12 text-center">
           <Link href="/my-plans">
-            <motion.button
-              whileHover={{
-                scale: 1.1,
-                boxShadow: "0 0 28px rgba(168,85,247,0.95)",
-              }}
-              whileTap={{ scale: 0.95 }}
-              className="bg-purple-600 px-8 py-3 rounded-lg font-bold shadow-lg"
-            >
+            <button className="bg-purple-600 px-8 py-3 rounded-lg font-bold">
               My Plans
-            </motion.button>
+            </button>
           </Link>
         </div>
       )}
