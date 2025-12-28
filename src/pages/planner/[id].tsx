@@ -138,9 +138,6 @@ export default function PlannerResult() {
     }
   };
 
-  if (loading) return <div className="min-h-screen grid place-items-center text-white text-2xl">Loading...</div>;
-  if (!plan) return <div className="min-h-screen grid place-items-center text-white text-2xl">Plan not found.</div>;
-
   const groupTasks = (tasks: string[]) => {
     const grouped: Record<string, Record<string, number>> = {};
     if (!tasks || !Array.isArray(tasks)) return grouped;
@@ -176,6 +173,30 @@ export default function PlannerResult() {
       return total + Object.values(actions).reduce((sum, mins) => sum + mins, 0);
     }, 0);
   };
+
+  // --- NEW PROGRESS TRACKING LOGIC ---
+  const calculateProgress = () => {
+    if (!plan || !plan.timetable) return 0;
+    let totalTasks = 0;
+    let doneTasks = 0;
+
+    Object.entries(plan.timetable).forEach(([day, tasks]: any) => {
+      const grouped = groupTasks(tasks);
+      Object.entries(grouped).forEach(([subject, actions]) => {
+        Object.keys(actions).forEach(action => {
+          totalTasks++;
+          if (completedTasks[`${day}-${subject}-${action}`]) {
+            doneTasks++;
+          }
+        });
+      });
+    });
+
+    return totalTasks === 0 ? 0 : Math.round((doneTasks / totalTasks) * 100);
+  };
+
+  if (loading) return <div className="min-h-screen grid place-items-center text-white text-2xl">Loading...</div>;
+  if (!plan) return <div className="min-h-screen grid place-items-center text-white text-2xl">Plan not found.</div>;
 
   return (
     <div
@@ -270,6 +291,31 @@ export default function PlannerResult() {
             </div>
           )}
 
+          {/* NEW PROGRESS TRACKER UI */}
+          <div className="max-w-4xl mx-auto mb-16">
+            <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-8 shadow-2xl">
+              <div className="flex justify-between items-end mb-6">
+                <div>
+                  <h3 className="text-2xl font-bold text-purple-200">Course Progress</h3>
+                  <p className="text-white/50 text-sm">Real-time tracking of your journey</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-5xl font-black text-purple-400 drop-shadow-lg">
+                    {calculateProgress()}%
+                  </span>
+                </div>
+              </div>
+              <div className="w-full bg-black/40 h-5 rounded-full overflow-hidden border border-white/10 p-1">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${calculateProgress()}%` }}
+                  transition={{ duration: 1, ease: "easeOut" }}
+                  className="h-full bg-gradient-to-r from-purple-600 via-fuchsia-500 to-emerald-400 rounded-full shadow-[0_0_20px_rgba(168,85,247,0.4)]"
+                />
+              </div>
+            </div>
+          </div>
+
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 items-start">
             {plan.timetable ? Object.entries(plan.timetable as Record<string, string[]>)
               .sort(([a], [b]) => {
@@ -346,7 +392,6 @@ export default function PlannerResult() {
                                         >
                                           {isChecked && <span className="text-white text-xs font-bold">✓</span>}
                                         </div>
-                                        {/* REMOVED line-through AND grayscale - Added subtle opacity-70 */}
                                         <span className={`flex items-center gap-3 transition-all ${isChecked ? 'opacity-70' : 'opacity-100'}`}>
                                           <span className="text-2xl">{getIcon(action)}</span>
                                           <span>{action}</span>
