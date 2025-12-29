@@ -39,40 +39,38 @@ export default function PlannerResult() {
   const [showHooray, setShowHooray] = useState(false);
 
   useEffect(() => {
-    // FIX 1: Explicitly wait for router and the ID to exist
-    if (!router.isReady || !id) return;
+    if (!router.isReady) return;
+
+    if (!id || id === 'undefined' || typeof id !== 'string') {
+      setLoading(false);
+      return;
+    }
 
     const fetchPlan = async () => {
-      setLoading(true);
-      try {
-        const snap = await getDoc(doc(db, "studyPlans", id as string));
-        if (snap.exists()) {
-          const planData = snap.data().plan;
-          setPlan(planData);
-          const randomIndex = Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length);
-          setQuote(MOTIVATIONAL_QUOTES[randomIndex]);
-          
-          // Load completed tasks from localStorage
-          const storageKey = `completedTasks_${id}`;
-          const saved = localStorage.getItem(storageKey);
-          if (saved) {
-            try {
-              const parsed = JSON.parse(saved);
-              setCompletedTasks(parsed);
-            } catch (e) {
-              console.error("Error loading completed tasks:", e);
-            }
+      const snap = await getDoc(doc(db, "studyPlans", id));
+      if (snap.exists()) {
+        const planData = snap.data().plan;
+        setPlan(planData);
+        const randomIndex = Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length);
+        setQuote(MOTIVATIONAL_QUOTES[randomIndex]);
+        
+        // Load completed tasks from localStorage
+        const storageKey = `completedTasks_${id}`;
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            setCompletedTasks(parsed);
+          } catch (e) {
+            console.error("Error loading completed tasks:", e);
           }
         }
-      } catch (error) {
-        console.error("Error fetching plan:", error);
-      } finally {
-        setLoading(false);
       }
+      setLoading(false);
     };
 
     fetchPlan();
-  }, [router.isReady, id]); // FIX 2: Added id to dependency array
+  }, [router.isReady, id]);
 
   const toggleTask = (day: string, subject: string, action: string) => {
     if (!id || typeof id !== 'string') return;
@@ -91,7 +89,6 @@ export default function PlannerResult() {
   };
 
   const checkDayCompletion = (day: string, currentTasks: Record<string, boolean>) => {
-    if (!plan || !plan.timetable || !plan.timetable[day]) return;
     const tasks = plan.timetable[day];
     const grouped = groupTasks(tasks);
     
@@ -123,17 +120,14 @@ export default function PlannerResult() {
       return;
     }
 
-    // FIX 3: Robust ID check for saving
-    const activeId = id || router.query.id;
-    if (typeof activeId !== "string") {
-      setSaveStatus("Invalid plan ID. Please refresh and try again.");
-      return;
-    }
-
     try {
+      if (typeof id !== "string") {
+        setSaveStatus("Invalid plan ID. Please refresh and try again.");
+        return;
+      }
       await addDoc(collection(db, "users", user.uid, "plans"), {
         name: planName,
-        originalPlanId: activeId,
+        originalPlanId: id,
         plan: plan.timetable,
         tips: plan.tips || [],
         createdAt: serverTimestamp(),
@@ -181,7 +175,7 @@ export default function PlannerResult() {
     }, 0);
   };
 
-  // --- PROGRESS TRACKING LOGIC ---
+  // --- NEW PROGRESS TRACKING LOGIC ---
   const calculateProgress = () => {
     if (!plan || !plan.timetable) return 0;
     let totalTasks = 0;
@@ -203,7 +197,11 @@ export default function PlannerResult() {
   };
 
   if (loading) return <div className="min-h-screen grid place-items-center text-white text-2xl">Loading...</div>;
-  if (!plan) return <div className="min-h-screen grid place-items-center text-white text-2xl">Plan not found.</div>;
+
+  // Only show "Plan not found" after router is ready and id is truly invalid/missing
+  if (!router.isReady || !id || id === 'undefined' || typeof id !== 'string' || !plan) {
+    return <div className="min-h-screen grid place-items-center text-white text-2xl">Plan not found.</div>;
+  }
 
   return (
     <div
@@ -298,7 +296,7 @@ export default function PlannerResult() {
             </div>
           )}
 
-          {/* PROGRESS TRACKER UI */}
+          {/* NEW PROGRESS TRACKER UI */}
           <div className="max-w-4xl mx-auto mb-16">
             <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-8 shadow-2xl">
               <div className="flex justify-between items-end mb-6">
