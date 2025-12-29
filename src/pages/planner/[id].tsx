@@ -1,5 +1,3 @@
-// File: pages/planner/[id].tsx   (or app/planner/[id]/page.tsx)
-
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { doc, getDoc, collection, addDoc, serverTimestamp } from "firebase/firestore";
@@ -35,81 +33,79 @@ export default function PlannerResult() {
   const [showSaveInput, setShowSaveInput] = useState(false);
   const [planName, setPlanName] = useState("");
   const [saveStatus, setSaveStatus] = useState("");
+  
+  // State for Checklist and completion popup
   const [completedTasks, setCompletedTasks] = useState<Record<string, boolean>>({});
   const [showHooray, setShowHooray] = useState(false);
 
   useEffect(() => {
     if (!router.isReady) return;
-
-    // If id is missing, undefined, or literally "undefined" string → early exit
-    if (!id || id === "undefined" || typeof id !== "string") {
+    if (!id || id === 'undefined' || typeof id !== 'string') {
       setLoading(false);
       return;
     }
 
     const fetchPlan = async () => {
-      try {
-        const snap = await getDoc(doc(db, "studyPlans", id));
-        if (snap.exists()) {
-          const planData = snap.data().plan;
-          setPlan(planData);
-
-          const randomIndex = Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length);
-          setQuote(MOTIVATIONAL_QUOTES[randomIndex]);
-
-          // Load saved checkboxes from localStorage
-          const storageKey = `completedTasks_${id}`;
-          const saved = localStorage.getItem(storageKey);
-          if (saved) {
-            try {
-              setCompletedTasks(JSON.parse(saved));
-            } catch (e) {
-              console.error("Failed to parse saved tasks", e);
-            }
+      const snap = await getDoc(doc(db, "studyPlans", id));
+      if (snap.exists()) {
+        const planData = snap.data().plan;
+        setPlan(planData);
+        const randomIndex = Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length);
+        setQuote(MOTIVATIONAL_QUOTES[randomIndex]);
+        
+        // Load completed tasks from localStorage
+        const storageKey = `completedTasks_${id}`;
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            setCompletedTasks(parsed);
+          } catch (e) {
+            console.error("Error loading completed tasks:", e);
           }
         }
-        // If plan doesn't exist → keep plan as null
-      } catch (error) {
-        console.error("Error fetching plan:", error);
-      } finally {
-        setLoading(false);
       }
+      setLoading(false);
     };
 
     fetchPlan();
   }, [router.isReady, id]);
 
   const toggleTask = (day: string, subject: string, action: string) => {
-    if (!id || typeof id !== "string") return;
-
+    if (!id || typeof id !== 'string') return;
+    
     const taskId = `${day}-${subject}-${action}`;
-    setCompletedTasks((prev) => {
+    setCompletedTasks(prev => {
       const newState = { ...prev, [taskId]: !prev[taskId] };
       checkDayCompletion(day, newState);
-
-      localStorage.setItem(`completedTasks_${id}`, JSON.stringify(newState));
+      
+      // Save to localStorage
+      const storageKey = `completedTasks_${id}`;
+      localStorage.setItem(storageKey, JSON.stringify(newState));
+      
       return newState;
     });
   };
 
   const checkDayCompletion = (day: string, currentTasks: Record<string, boolean>) => {
-    if (!plan?.timetable) return;
     const tasks = plan.timetable[day];
     const grouped = groupTasks(tasks);
-
+    
     let allDone = true;
     let hasTasks = false;
 
     Object.entries(grouped).forEach(([subject, actions]) => {
-      Object.keys(actions).forEach((action) => {
+      Object.keys(actions).forEach(action => {
         hasTasks = true;
-        if (!currentTasks[`${day}-${subject}-${action}`]) allDone = false;
+        if (!currentTasks[`${day}-${subject}-${action}`]) {
+          allDone = false;
+        }
       });
     });
 
     if (hasTasks && allDone) {
       setShowHooray(true);
-      setTimeout(() => setShowHooray(false), 4000);
+      setTimeout(() => setShowHooray(false), 4000); 
     }
   };
 
@@ -122,9 +118,12 @@ export default function PlannerResult() {
       setSaveStatus("Enter a name for your plan.");
       return;
     }
-    if (typeof id !== "string") return;
 
     try {
+      if (typeof id !== "string") {
+        setSaveStatus("Invalid plan ID. Please refresh and try again.");
+        return;
+      }
       await addDoc(collection(db, "users", user.uid, "plans"), {
         name: planName,
         originalPlanId: id,
@@ -134,7 +133,6 @@ export default function PlannerResult() {
       });
       setSaveStatus("Plan saved successfully! Check My Plans.");
       setShowSaveInput(false);
-      setPlanName("");
     } catch (error) {
       setSaveStatus("Failed to save. Try again.");
     }
@@ -143,9 +141,9 @@ export default function PlannerResult() {
   const groupTasks = (tasks: string[]) => {
     const grouped: Record<string, Record<string, number>> = {};
     if (!tasks || !Array.isArray(tasks)) return grouped;
-
+    
     tasks.forEach((task: string) => {
-      if (!task || typeof task !== "string") return;
+      if (!task || typeof task !== 'string') return;
       const parts = task.split(" : ");
       if (parts.length < 2) return;
       const subject = parts[0].trim();
@@ -176,6 +174,7 @@ export default function PlannerResult() {
     }, 0);
   };
 
+  // --- NEW PROGRESS TRACKING LOGIC ---
   const calculateProgress = () => {
     if (!plan || !plan.timetable) return 0;
     let totalTasks = 0;
@@ -184,9 +183,11 @@ export default function PlannerResult() {
     Object.entries(plan.timetable).forEach(([day, tasks]: any) => {
       const grouped = groupTasks(tasks);
       Object.entries(grouped).forEach(([subject, actions]) => {
-        Object.keys(actions).forEach((action) => {
+        Object.keys(actions).forEach(action => {
           totalTasks++;
-          if (completedTasks[`${day}-${subject}-${action}`]) doneTasks++;
+          if (completedTasks[`${day}-${subject}-${action}`]) {
+            doneTasks++;
+          }
         });
       });
     });
@@ -194,48 +195,23 @@ export default function PlannerResult() {
     return totalTasks === 0 ? 0 : Math.round((doneTasks / totalTasks) * 100);
   };
 
-  // Loading state
-  if (loading) {
-    return (
-      <div className="min-h-screen grid place-items-center text-white text-3xl bg-black">
-        Loading your plan...
-      </div>
-    );
-  }
+  if (loading) return <div className="min-h-screen grid place-items-center text-white text-2xl">Loading...</div>;
+  if (!plan) return <div className="min-h-screen grid place-items-center text-white text-2xl">Plan not found.</div>;
 
-  // Invalid / missing plan state (including /planner/undefined)
-  if (!plan) {
-    return (
-      <div className="min-h-screen grid place-items-center text-white bg-black px-6">
-        <div className="text-center space-y-8 max-w-2xl">
-          <h1 className="text-5xl font-bold">Plan not found</h1>
-          <p className="text-xl text-white/70">
-            The link might be broken, or you visited the page directly without generating a plan first.
-          </p>
-          <Link href="/">
-            <button className="bg-gradient-to-r from-purple-600 to-emerald-600 hover:from-purple-700 hover:to-emerald-700 px-10 py-5 rounded-2xl text-white font-bold text-xl shadow-2xl transition transform hover:scale-105">
-              ← Create a New Study Plan
-            </button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  // Main plan view
   return (
     <div
       className="min-h-screen bg-fixed bg-cover bg-center text-white relative"
       style={{ backgroundImage: "url('/b1.jpg')" }}
     >
+      {/* FIXED HOORAY POPUP */}
       <AnimatePresence>
         {showHooray && (
           <div className="fixed inset-0 pointer-events-none z-[100] flex flex-col items-center justify-start pt-10">
-            <motion.div
+            <motion.div 
               initial={{ opacity: 0, y: -100, scale: 0.8 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -100, scale: 0.8 }}
-              className="bg-gradient-to-r from-purple-500 to-emerald-600 text-white px-10 py-5 rounded-full shadow-[0_0_50px_rgba(34,197,94,0.5)] font-black text-2xl border-2 border-white/50 backdrop-blur-md"
+              className="bg-gradient-to-r from-purple-500 to-emerald-600 text-white px-10 py-5 rounded-full shadow-[0_0_50px_rgba(34,197,94,0.5)] font-black text-2xl border-2 border-white/50 backdrop-blur-md pointer-events-auto"
             >
               🎉 Hooray! You completed all tasks for the day! 🚀
             </motion.div>
@@ -245,6 +221,7 @@ export default function PlannerResult() {
 
       <div className="min-h-screen bg-black/60 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-6 py-12">
+
           {/* Top Bar */}
           <div className="flex justify-between items-center mb-10">
             <Link href="/my-plans">
@@ -280,7 +257,6 @@ export default function PlannerResult() {
                     onClick={() => {
                       setShowSaveInput(false);
                       setSaveStatus("");
-                      setPlanName("");
                     }}
                     className="text-white/70 hover:text-white"
                   >
@@ -315,7 +291,7 @@ export default function PlannerResult() {
             </div>
           )}
 
-          {/* Progress Tracker */}
+          {/* NEW PROGRESS TRACKER UI */}
           <div className="max-w-4xl mx-auto mb-16">
             <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-8 shadow-2xl">
               <div className="flex justify-between items-end mb-6">
@@ -330,7 +306,7 @@ export default function PlannerResult() {
                 </div>
               </div>
               <div className="w-full bg-black/40 h-5 rounded-full overflow-hidden border border-white/10 p-1">
-                <motion.div
+                <motion.div 
                   initial={{ width: 0 }}
                   animate={{ width: `${calculateProgress()}%` }}
                   transition={{ duration: 1, ease: "easeOut" }}
@@ -340,9 +316,8 @@ export default function PlannerResult() {
             </div>
           </div>
 
-          {/* Timetable Days */}
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 items-start">
-            {Object.entries(plan.timetable as Record<string, string[]>)
+            {plan.timetable ? Object.entries(plan.timetable as Record<string, string[]>)
               .sort(([a], [b]) => {
                 const numA = Number(a.match(/\d+/)?.[0]) || 0;
                 const numB = Number(b.match(/\d+/)?.[0]) || 0;
@@ -363,11 +338,15 @@ export default function PlannerResult() {
                     <button
                       onClick={() => {
                         if (!hasContent) return;
-                        setOpenDays((prev) =>
-                          prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+                        setOpenDays(prev =>
+                          prev.includes(day)
+                            ? prev.filter(d => d !== day)
+                            : [...prev, day]
                         );
                       }}
-                      className={`w-full px-8 py-6 text-left transition-all ${hasContent ? "hover:bg-white/10 cursor-pointer" : "cursor-default"}`}
+                      className={`w-full px-8 py-6 text-left transition-all ${
+                        hasContent ? 'hover:bg-white/10 cursor-pointer' : 'cursor-default'
+                      }`}
                     >
                       <div className="flex justify-between items-center">
                         <h2 className="text-2xl font-bold">{day}</h2>
@@ -377,7 +356,7 @@ export default function PlannerResult() {
                           </span>
                           {hasContent && (
                             <span className="text-2xl transition-transform duration-300">
-                              {openDays.includes(day) ? "▼" : "▶"}
+                              {openDays.includes(day) ? '▼' : '▶'}
                             </span>
                           )}
                         </div>
@@ -394,7 +373,10 @@ export default function PlannerResult() {
                           className="px-8 pb-8 space-y-6"
                         >
                           {Object.entries(grouped).map(([subject, actions]: [string, Record<string, number>]) => (
-                            <div key={subject} className="bg-black/30 rounded-2xl p-6 border border-white/10">
+                            <div
+                              key={subject}
+                              className="bg-black/30 rounded-2xl p-6 border border-white/10"
+                            >
                               <h3 className="text-xl font-bold text-purple-200 mb-4 uppercase tracking-wider">
                                 {subject}
                               </h3>
@@ -404,28 +386,18 @@ export default function PlannerResult() {
                                   return (
                                     <li key={action} className="flex justify-between items-center text-lg">
                                       <div className="flex items-center gap-4">
-                                        <div
+                                        <div 
                                           onClick={() => toggleTask(day, subject, action)}
-                                          className={`w-6 h-6 rounded border-2 flex items-center justify-center cursor-pointer transition-all ${
-                                            isChecked
-                                              ? "bg-green-500 border-green-500 scale-110"
-                                              : "border-white/30 hover:border-purple-400"
-                                          }`}
+                                          className={`w-6 h-6 rounded border-2 flex items-center justify-center cursor-pointer transition-all ${isChecked ? 'bg-green-500 border-green-500 scale-110' : 'border-white/30 hover:border-purple-400'}`}
                                         >
                                           {isChecked && <span className="text-white text-xs font-bold">✓</span>}
                                         </div>
-                                        <span
-                                          className={`flex items-center gap-3 transition-all ${
-                                            isChecked ? "opacity-70" : "opacity-100"
-                                          }`}
-                                        >
+                                        <span className={`flex items-center gap-3 transition-all ${isChecked ? 'opacity-70' : 'opacity-100'}`}>
                                           <span className="text-2xl">{getIcon(action)}</span>
                                           <span>{action}</span>
                                         </span>
                                       </div>
-                                      <span className={`text-purple-300 font-medium ${isChecked ? "opacity-70" : ""}`}>
-                                        {mins}m
-                                      </span>
+                                      <span className={`text-purple-300 font-medium ${isChecked ? 'opacity-70' : ''}`}>{mins}m</span>
                                     </li>
                                   );
                                 })}
@@ -443,14 +415,20 @@ export default function PlannerResult() {
                     )}
                   </motion.div>
                 );
-              })}
+              }) : (
+                <div className="col-span-full text-center text-white/70 text-lg">
+                  No timetable data available.
+                </div>
+              )}
           </div>
 
-          {/* Tips Section */}
+          {/* Tips */}
           {plan.tips && plan.tips.length > 0 && (
             <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} className="max-w-4xl mx-auto mt-20">
               <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-10 border border-white/20 shadow-2xl">
-                <h3 className="text-3xl font-bold text-purple-200 mb-8 text-center">Expert Study Tips</h3>
+                <h3 className="text-3xl font-bold text-purple-200 mb-8 text-center">
+                  Expert Study Tips
+                </h3>
                 <ul className="grid md:grid-cols-2 gap-6 text-lg">
                   {plan.tips.map((tip: string, i: number) => (
                     <li key={i} className="flex gap-4 text-white/90">
