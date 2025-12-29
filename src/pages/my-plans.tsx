@@ -63,6 +63,7 @@ export default function MyPlans() {
         backgroundPosition: "center",
       }}
     >
+     
       <h1 className="text-4xl font-bold text-center mb-8">
         My Saved Plans
       </h1>
@@ -119,6 +120,13 @@ export default function MyPlans() {
           ))}
         </div>
       )}
+      <div className="mt-20 flex justify-center">
+  <Link href="/planner">
+    <button className="bg-purple-600 hover:bg-purple-700 px-10 py-4 rounded-xl text-white font-semibold shadow-xl transition">
+      ← Back to Planner
+    </button>
+  </Link>
+</div>
     </div>
   );
 }
